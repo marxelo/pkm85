@@ -1,3 +1,11 @@
+pkm85 (0.85-2) stable; urgency=low
+
+  [ Marselo ]
+  * change git log formatting and improves date validation
+ 
+ -- Marselo <falso.endereco@gmail.com>  Tue,  13 Dec 2022 01:07:00 +0300 
+
+
 pkm85 (0.85-1) stable; urgency=low
 
   [ Marselo ]

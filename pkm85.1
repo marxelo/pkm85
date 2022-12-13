@@ -9,7 +9,7 @@ pkm85 [OPTION]
 .SH DESCRIPTION
 pkm85 gera três aquivos com a lista dos arquivos criados/modificados por autor e periodo. Os commits de merge são desconsiderados.
 
-Os arquivos gerados são: 
+Os arquivos gerados são:  
 
 \fBall\fP     Todos os arquivos modificados pelo autor/periodo informado
 
@@ -21,7 +21,7 @@ Os arquivos gerados são:
  
 O comando executado para buscar os commits é:
 
-.B git log --oneline --name-status --no-merges --since=<since - 1 day> --until=<until> --author=<author> 
+git log --name-status --pretty="format:%h %ad %s" --date=format:"%F %H:%M" --since=<since - 1 day> --until=<until> --author=<author> 
 .SH OPTION 
 pkm85 possui duas opções de interface: 
 .B gui 
@@ -33,6 +33,9 @@ executa em modo gui.
 
 .B -t, --terminal 
 executa em modo terminal.
+
+.B -h, --help 
+exibe esta ajuda e encerra.
 .SH SEE ALSO
 Manual 
 .B git log
