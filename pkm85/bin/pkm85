@@ -1,0 +1,205 @@
+#!/bin/bash
+# Pkm85.sh
+# Version: 0.85.1
+# author: Marselo Maciel
+# e-mail: falso.endereco@gmail.com
+# date: dez/2022
+# License: GPLv3
+#
+# [en]
+# What this script does? It runs 'git log' to get all modified files by given author within a given period of time
+#
+# [pt_br]
+# O que este script faz? Executa 'git log' para buscar todos os arquivos modificados pelo autor informado em um determinado período
+#
+##############################################################################
+#
+# check if current directory is a git repository
+script_info="Pkm85 - Version 0.85.1 - What is Pkm 85?"
+disclaimer='Pkm85 é apenas um facilitador. Você é o único responsável por utilizar as informações fornecidas.'
+echo -e $script_info'\n'
+
+short_help() {
+    echo 'Options '
+    echo '    -g, --gui    Executa em modo gui'
+    echo '-t, --terminal   Executa em modo terminal'
+    echo '-?, -h           Exibe esta ajuda e encerra'
+    echo
+}
+
+check_for_man_page() {
+    man "$1" >/dev/null 2>&1
+}
+
+# check/handle arguments
+if [[ "$1" = "-g" || "$1" = "--gui" || -z "$1" ]]; then
+    gui_interface=true
+elif [[ "$1" = "-t" || "$1" = "--terminal" ]]; then
+    gui_interface=false
+elif [[ "$1" = "-h" || "$1" = "--help" || "$1" = "-?" ]]; then
+    man_page_check=$(check_for_man_page $0 && echo 0)
+
+    if [[ $man_page_check = 0 ]]; then
+        man "$0"
+    else
+        short_help
+    fi
+    exit 0
+else
+    echo 'Opção inválida. Para ajuda utilize pkm85 -h'
+    exit 1
+fi
+
+whiptail_error() {
+    whiptail --ok-button "Encerrar" --backtitle "$script_info" --title "Erro!" --msgbox "$1" 8 55
+}
+
+is_valid_date() {
+    if [ -z "$1" ]; then
+        error_message='Data não informada'
+        if [ "$gui_interface" = true ]; then
+            whiptail_error "$error_message"
+        else
+            echo -e 'Erro: '$error_message
+        fi
+        exit 1
+    fi
+
+    if [[ $1 != $(date -d "$1" '+%Y-%m-%d') ]]; then
+        error_message='Data ou formato inválido: '$1
+        if [ "$gui_interface" = true ]; then
+            whiptail_error "$error_message"
+        else
+            echo -e 'Erro: '$error_message
+        fi
+        exit 1
+    fi
+
+}
+
+whiptail_interface() {
+    whiptail --ok-button "Ok, Entendi" --backtitle $script_info --title "D I S C L A I M E R" --msgbox "$disclaimer" 8 60
+
+    autor=$(whiptail --ok-button "Continuar" --nocancel --backtitle $script_info --title "Autor" --inputbox "Informe nome, matrícula ou e-mail do Desenvolvedor" 9 40 $fautor 3>&1 1>&2 2>&3)
+
+    inicio=$(whiptail --ok-button "Continuar" --nocancel --backtitle $script_info --title "Data Inicial" --inputbox "Informe a data inicial no formato AAAA-MM-DD" 9 40 $finicio 3>&1 1>&2 2>&3)
+    is_valid_date $inicio
+    fim=$(whiptail --ok-button "Continuar" --nocancel --backtitle $script_info --title "Data final" --inputbox "Informe a data final no formato AAAA-MM-DD" 9 40 $ffim 3>&1 1>&2 2>&3)
+    is_valid_date $fim
+}
+
+terminal_interface() {
+    echo -e "\nInforme os campos solicitados ou tecle Enter para repetir os valores da última execução"
+    read -p "  Nome ou e-mail do committer ($fautor): " autor
+    if [ -z "$autor" ]; then
+        if [ -z "$fautor" ]; then
+            echo 'Nome do committer não informado'
+            exit 1
+        else
+            autor=$fautor
+        fi
+    fi
+    #
+    read -p "  Data inicial no formato AAAA-MM-DD ($finicio)]: " inicio
+    if [ -z "$inicio" ]; then
+        inicio=$finicio
+    fi
+    is_valid_date $inicio
+    #
+    read -p "  Data final no formato AAAA-MM-DD ($ffim): " fim
+    if [ -z "$fim" ]; then
+        fim=$ffim
+    fi
+    is_valid_date $fim
+
+}
+
+# Pkm85 must be called in a directory that is a git repository
+if [ $(
+    git -C . rev-parse 2>/dev/null
+    echo $?
+) != 0 ]; then
+    error_message='Pkm85 deve ser invocado em um repositório git!'
+    if [ "$gui_interface" = true ]; then
+        echo $error_message
+        whiptail_error "$error_message"
+    else
+        echo -e 'Erro: '$error_message
+    fi
+    exit 1
+fi
+
+# get last execution data
+input=$HOME"/.pkm85.ddr"
+
+if [ -f "$input" ]; then
+    line=$(head -n 1 $input)
+else
+    line="$USER"';'"$(date +"%F")"';'"$(date +"%F")"
+fi
+
+IFS=';'
+set $line
+fautor=$1
+finicio=$2
+ffim=$3
+
+if [ "$gui_interface" = true ]; then
+    whiptail_interface
+else
+    echo -e '\nDISCLAIMER: '$disclaimer
+    terminal_interface
+fi
+
+#salva dados informados
+echo "$autor;$inicio;$fim" >$input
+
+# cria diretório "/tmp/pkm85"
+outPutDirectory='/tmp/pkm85'
+mkdir -p $outPutDirectory
+
+# Geração dos arquivos de output
+timestamp=$(date +"%Y%m%d-%H%M%S")
+
+gitLogOutPutFile=$outPutDirectory/$timestamp'a-all.txt'
+nodupsfile=$outPutDirectory/$timestamp'b-no-dups.txt'
+dupsFile=$outPutDirectory/$timestamp'c-dups.txt'
+
+# executa git log
+git log --oneline --name-status --no-merges --since="$inicio - 1 day" --until=$fim --author="$autor" >$gitLogOutPutFile
+
+#Verifica se o arquivo não está vazio
+qtLinhas=$(awk 'END { print NR }' $gitLogOutPutFile)
+
+if [ $qtLinhas = 0 ]; then
+    no_result='Não encontrado commits de '$autor' no período de '$inicio' à '$fim' nesta branch.\n\nVerifique se nome e datas informados estão corretos.'
+    if [ "$gui_interface" = true ]; then
+        whiptail --ok-button "Encerrar" --backtitle "$script_info" --title "Sem resultado :(" --msgbox "$no_result" 10 60
+    else
+        echo -e "Sem resultado :(\n"
+        echo -e $no_result
+        echo
+    fi
+    exit 1
+fi
+
+# Retira linhas duplicadas
+awk '!a[$0]++' $gitLogOutPutFile >$nodupsfile
+
+# Grava as linhas duplicadas
+sort $gitLogOutPutFile | uniq -d >$dupsFile
+
+sucess_info='Resultado salvo em:\n'$gitLogOutPutFile'     (Modificados no período)\n'$nodupsfile' (Exclui duplicados)\n'$dupsFile'    (lista duplicados)'
+warning1='\n\nATENÇÃO: Pkm85 não considera como duplicidade criação e alteração do mesmo arquivo no período informado. Confira e trate adequadamente as ocorrências do tipo.'
+
+if [ "$gui_interface" = true ]; then
+    whiptail --ok-button "Encerrar" --backtitle $script_info --title "Sucesso \o/" --msgbox "$sucess_info$warning1" 14 80
+fi
+
+echo ' '
+echo '                       Sucesso \o/ '
+echo -e $sucess_info
+echo -e $warning1
+
+exit 0
+

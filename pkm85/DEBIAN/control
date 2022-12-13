@@ -1,0 +1,8 @@
+Package: pkm85
+Version: 0.85-1
+Section: utils
+Priority: optional
+Architecture: all
+Maintainer: Marselo <falso.endereco@gmail.com>
+Description: git log util
+ Buscar commits por autor e período

@@ -1,0 +1,44 @@
+.\"                                      Hey, EMACS: -*- nroff -*-
+.\" (C) Copyright 2022 Marselo <falso.endereco@gmail.com>
+.\"
+.TH PKM85 1 
+.SH NAME
+pkm85 - git log util
+.SH SYNOPSIS
+pkm85 [OPTION]
+.SH DESCRIPTION
+pkm85 gera três aquivos com a lista dos arquivos criados/modificados por autor e periodo. Os commits de merge são desconsiderados.
+
+Os arquivos gerados são: 
+
+\fBall\fP     Todos os arquivos modificados pelo autor/periodo informado
+
+\fBno-dups\fP Exclui os arquivos modificados mais de uma vez no período, mantendo o commit mais recente
+
+\fBdups\fP    Lista os arquivos modificados mais de uma vez no período
+
+.SS GIT LOG COMMAND
+ 
+O comando executado para buscar os commits é:
+
+.B git log --oneline --name-status --no-merges --since=<since - 1 day> --until=<until> --author=<author> 
+.SH OPTION 
+pkm85 possui duas opções de interface: 
+.B gui 
+(default) e 
+.B terminal
+
+.B   , -g, --gui 
+executa em modo gui.
+
+.B -t, --terminal 
+executa em modo terminal.
+.SH SEE ALSO
+Manual 
+.B git log
+https://git-scm.com/docs/git-log/pt_BR
+.SH AUTHORS
+The
+.B pkm85 
+script was written by 
+Marselo <falso.endereco@gmail.com>

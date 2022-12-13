@@ -1,0 +1,6 @@
+pkm85 (0.85-1) stable; urgency=low
+
+  [ Marselo ]
+  * git log util - busca arquivos modificados por autor/período
+
+ -- Marselo <falso.endereco@gmail.com>  Sun,  11 Dec 2022 11:16:00 +0300 
