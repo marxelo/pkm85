@@ -1,3 +1,11 @@
+pkm85 (0.85-3) stable; urgency=low
+
+  [ Marselo ] 
+  * Rewrite man page
+  * fix author name validation
+ 
+ -- Marselo <falso.endereco@gmail.com>  Tue,  13 Dec 2022 22:32:00 +0300 
+
 pkm85 (0.85-2) stable; urgency=low
 
   [ Marselo ]

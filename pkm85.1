@@ -7,35 +7,53 @@ pkm85 - git log util
 .SH SYNOPSIS
 pkm85 [OPTION]
 .SH DESCRIPTION
-pkm85 gera três aquivos com a lista dos arquivos criados/modificados por autor e periodo. Os commits de merge são desconsiderados.
-
-Os arquivos gerados são:  
-
-\fBall\fP     Todos os arquivos modificados pelo autor/periodo informado
-
-\fBno-dups\fP Exclui os arquivos modificados mais de uma vez no período, mantendo o commit mais recente
-
-\fBdups\fP    Lista os arquivos modificados mais de uma vez no período
+pkm85 é um script simples que executa o comando 
+.B git log
+para buscar arquivos criados e modificados por autor e período informado. O resultado é gravado em três
+arquivos, conforme abaixo. 
+.TP
+all
+Lista todos os arquivos criados/modificados agrupados por commit
+.TP  
+no-dups
+O mesmo conteúdo do arquivo  
+.B all, 
+porém em caso de arquivo modificado mais de uma vez no período, lista apenas o commit mais recente
+.TP   
+dups
+Lista os arquivos/commits excluídos do arquivo 
+.B no-dups
+.SS NOTES 
+.TP
+1-
+Se um arquivo foi criado e modificado no período, tanto a criação quanto a modificação mais recente são listados no 
+.B no-dups
+.TP
+2- 
+Commits de
+.B merge
+não são listados em nenhum dos arquivos
 
 .SS GIT LOG COMMAND
  
-O comando executado para buscar os commits é:
+O comando completo executado pelo script é:
 
-git log --name-status --pretty="format:%h %ad %s" --date=format:"%F %H:%M" --since=<since - 1 day> --until=<until> --author=<author> 
-.SH OPTION 
-pkm85 possui duas opções de interface: 
-.B gui 
-(default) e 
-.B terminal
-
-.B   , -g, --gui 
-executa em modo gui.
-
-.B -t, --terminal 
-executa em modo terminal.
-
-.B -h, --help 
-exibe esta ajuda e encerra.
+git log --author=<author> --since=<since - 1 day> --until=<until> --name-status 
+.B --no-merges
+--pretty="format:%h %ad %s" --date=format:"%F %H:%M" 
+.SH OPTIONS 
+.TP  
+-g, --gui 
+executa em modo gui (default)
+.TP  
+-t, --terminal 
+executa em modo terminal
+.TP  
+-h, --help 
+exibe esta ajuda e encerra
+.TP  
+-v, --version
+exibe número da versão
 .SH SEE ALSO
 Manual 
 .B git log
@@ -44,4 +62,4 @@ https://git-scm.com/docs/git-log/pt_BR
 The
 .B pkm85 
 script was written by 
-Marselo <falso.endereco@gmail.com>
+Marselo Maciel <falso.endereco@gmail.com>
