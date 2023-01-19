@@ -1,7 +1,18 @@
+pkm85 (0.85-4) stable; urgency=low
+
+  [ Marselo ] 
+  * Use name of committed files for comparison instead of line content
+  * Include warnings on report file
+  * Add time on 'since' and 'until' params (git log params)
+  * Add dialog as a tui option
+  * Simplify man page 
+ 
+ -- Marselo <falso.endereco@gmail.com>  Wed,  18 Jan 2023 21:01:00 +0300 
+
 pkm85 (0.85-3) stable; urgency=low
 
   [ Marselo ] 
-  * Rewrite man page
+  * Rewrite man page 
   * fix author name validation
  
  -- Marselo <falso.endereco@gmail.com>  Tue,  13 Dec 2022 22:32:00 +0300 

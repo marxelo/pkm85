@@ -2,34 +2,29 @@
 .\" (C) Copyright 2022 Marselo <falso.endereco@gmail.com>
 .\"
 .TH PKM85 1 
-.SH NAME
+.SH NAME 
 pkm85 - git log util
-.SH SYNOPSIS
+.SH SYNOPSIS 
 pkm85 [OPTION]
 .SH DESCRIPTION
 pkm85 é um script simples que executa o comando 
 .B git log
-para buscar arquivos criados e modificados por autor e período informado. O resultado é gravado em três
-arquivos, conforme abaixo. 
+para buscar commits por autor e período informado. O script trata a saída do git log e gera três arquivos, conforme abaixo: 
 .TP
-all
-Lista todos os arquivos criados/modificados agrupados por commit
+.B gitLogOutput
+É a saída do comando git log
 .TP  
-no-dups
-O mesmo conteúdo do arquivo  
-.B all, 
-porém em caso de arquivo modificado mais de uma vez no período, lista apenas o commit mais recente
-.TP   
-dups
-Lista os arquivos/commits excluídos do arquivo 
-.B no-dups
+.B relatorio
+Lista apenas o commit mais recente dos arquivos relacionados no 
+.B gitLogOutput. 
+Pode conter também alertas relacionados à criação e alteração do mesmo arquivo no período, deleção, movimentação de arquivos, etc
+.TP  
+.B duplicados
+Lista os commits anteriores dos arquivos contantes no  
+.B relatório
 .SS NOTES 
 .TP
-1-
-Se um arquivo foi criado e modificado no período, tanto a criação quanto a modificação mais recente são listados no 
-.B no-dups
-.TP
-2- 
+1- 
 Commits de
 .B merge
 não são listados em nenhum dos arquivos
@@ -38,23 +33,26 @@ não são listados em nenhum dos arquivos
  
 O comando completo executado pelo script é:
 
-git log --author=<author> --since=<since - 1 day> --until=<until> --name-status 
+git log --author=<author> --since=<since> --until=<until> 
 .B --no-merges
---pretty="format:%h %ad %s" --date=format:"%F %H:%M" 
+--name-status  --pretty="format:%h %ad %s" --date=format:"%F %H:%M" --abbrev=10
 .SH OPTIONS 
 .TP  
--g, --gui 
-executa em modo gui (default)
+-w 
+interface utilizando whiptail (default se whiptail instalado)
 .TP  
--t, --terminal 
-executa em modo terminal
+-d 
+interface utilizando dialog (default se whiptail não instalado e dialog instalado)
 .TP  
--h, --help 
+-t
+executa em modo terminal (default se whiptail e dialog não instalados)
+.TP  
+-h
 exibe esta ajuda e encerra
 .TP  
--v, --version
+-v
 exibe número da versão
-.SH SEE ALSO
+.SH SEE ALSO 
 Manual 
 .B git log
 https://git-scm.com/docs/git-log/pt_BR

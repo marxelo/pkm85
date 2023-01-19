@@ -1,6 +1,6 @@
 #!/bin/bash
 # Pkm85.sh
-# Version: 0.85.3
+# Version: 0.85.4
 # author: Marselo Maciel
 # e-mail: falso.endereco@gmail.com
 # date: dez/2022
@@ -10,19 +10,21 @@
 # What this script does? It runs 'git log' to get all added/modified files by given author within a given period of time
 #
 # [pt_br]
-# O que este script faz? Executa 'git log' para buscar todos os arquivos criados/modificados pelo autor informado em um determinado período
+# O que este script faz? Executa 'git log' para buscar todos os arquivos criados/modificados pelo autor/período informado
 #
 ##############################################################################
 #
 # check if current directory is a git repository
-script_info="Pkm85 - Version 0.85.3 - What is Pkm 85?"
+script_info="Pkm85 - Version 0.85.4 - What is Pkm 85?"
 disclaimer='Pkm85 é apenas um facilitador. Você é o único responsável por utilizar as informações fornecidas.'
 
 short_help() {
     echo 'Options '
-    echo '    -g, --gui    Executa em modo gui'
-    echo '-t, --terminal   Executa em modo terminal'
-    echo '-?, -h           Exibe esta ajuda e encerra'
+    echo '-w    Executa com interface whiptail'
+    echo '-d    Executa com interface dialog'
+    echo '-t    Executa em modo terminal'
+    echo '      Executa utilizando whiptail ou dialog (se disponível) ou em modo terminal'
+    echo '-?, -h   Exibe esta ajuda e encerra'
     echo
 }
 
@@ -30,15 +32,16 @@ check_for_man_page() {
     man "$1" >/dev/null 2>&1
 }
 
-whiptail_error() {
-    whiptail --ok-button "Encerrar" --backtitle "$script_info" --title "Erro!" --msgbox "$1" 8 55
+tui_error() {
+
+    $tui_interface --ok-button "Encerrar" --backtitle "$script_info" --title "Erro!" --msgbox "$1" 8 50
 }
 
 is_valid_date() {
     if [ -z "$1" ]; then
         error_message='Data não informada'
-        if [ "$gui_interface" = true ]; then
-            whiptail_error "$error_message"
+        if [ "$use_tui_interface" = true ]; then
+            tui_error "$error_message"
         else
             echo -e 'Erro: '$error_message
         fi
@@ -49,8 +52,8 @@ is_valid_date() {
 
         if [[ $1 != $(date -d "$1" '+%Y-%m-%d') ]]; then
             error_message='Data ou formato inválido: '$1
-            if [ "$gui_interface" = true ]; then
-                whiptail_error "$error_message"
+            if [ "$use_tui_interface" = true ]; then
+                tui_error "$error_message"
             else
                 echo -e 'Erro: '$error_message
             fi
@@ -58,8 +61,8 @@ is_valid_date() {
         fi
     else
         error_message="Data $1 não está no formato 20YY-MM-DD"
-        if [ "$gui_interface" = true ]; then
-            whiptail_error "$error_message"
+        if [ "$use_tui_interface" = true ]; then
+            tui_error "$error_message"
         else
             echo -e 'Erro: '$error_message
         fi
@@ -71,8 +74,8 @@ is_valid_date() {
 validate_author_name() {
     if [ -z "$autor" ]; then
         error_message='Nome do dev não informado'
-        if [ "$gui_interface" = true ]; then
-            whiptail_error "$error_message"
+        if [ "$use_tui_interface" = true ]; then
+            tui_error "$error_message"
             exit 1
         else
             if [ -z "$fautor" ]; then
@@ -85,14 +88,14 @@ validate_author_name() {
     fi
 }
 
-whiptail_interface() {
-    whiptail --ok-button "Ok, Entendi" --backtitle $script_info --title "D I S C L A I M E R" --msgbox "$disclaimer" 8 60
+tui_interface_pages() {
+    $tui_interface --ok-button "Ok, Entendi" --backtitle $script_info --title "D I S C L A I M E R" --msgbox "$disclaimer" 8 60
 
-    autor=$(whiptail --ok-button "Continuar" --nocancel --backtitle $script_info --title "Autor" --inputbox "Informe nome, matrícula ou e-mail do Desenvolvedor" 9 40 $fautor 3>&1 1>&2 2>&3)
+    autor=$($tui_interface --ok-button "Continuar" --nocancel --backtitle $script_info --title "Autor" --inputbox "Informe nome, matrícula ou e-mail do Desenvolvedor" 9 50 $fautor 3>&1 1>&2 2>&3)
     validate_author_name
-    inicio=$(whiptail --ok-button "Continuar" --nocancel --backtitle $script_info --title "Data Inicial" --inputbox "Informe a data inicial no formato AAAA-MM-DD" 9 40 $finicio 3>&1 1>&2 2>&3)
+    inicio=$($tui_interface --ok-button "Continuar" --nocancel --backtitle $script_info --title "Data Inicial" --inputbox "Informe a data inicial no formato AAAA-MM-DD" 9 50 $finicio 3>&1 1>&2 2>&3)
     is_valid_date $inicio
-    fim=$(whiptail --ok-button "Continuar" --nocancel --backtitle $script_info --title "Data final" --inputbox "Informe a data final no formato AAAA-MM-DD" 9 40 $ffim 3>&1 1>&2 2>&3)
+    fim=$($tui_interface --ok-button "Continuar" --nocancel --backtitle $script_info --title "Data final" --inputbox "Informe a data final no formato AAAA-MM-DD" 9 50 $ffim 3>&1 1>&2 2>&3)
     is_valid_date $fim
 }
 
@@ -122,11 +125,87 @@ terminal_interface() {
 
 }
 
+check_available_tui() {
+    if which dialog >/dev/null; then
+        hasDialog=true
+    fi
+
+    if which whiptail >/dev/null; then
+        hasWhiptail=true
+    fi
+
+    if [[ "$1" = "-w" ]]; then
+        if [[ "$hasWhiptail" = true ]]; then
+            use_whiptail=true
+            tui_interface="whiptail"
+        else
+            echo "Whiptail não instalado"
+            exit 1
+        fi
+    fi
+
+    if [[ "$1" = "-d" ]]; then
+        if [[ "$hasDialog" = true ]]; then
+            use_dialog=true
+            tui_interface="dialog"
+        else
+            echo "Dialog não instalado"
+            exit 1
+        fi
+    fi
+
+    use_tui_interface=true
+
+    if [[ -z "$1" ]]; then
+        if [[ "$hasWhiptail" = true ]]; then
+            use_whiptail=true
+            tui_interface="whiptail"
+        elif [[ "$hasDialog" = true ]]; then
+            use_dialog=true
+            tui_interface="dialog"
+        else
+            use_tui_interface=false
+        fi
+    fi
+}
+
+insert_blank_line_between_hash() {
+    previous_hash_id=""
+    input=$1
+    outup=$2
+
+    if [ -f "$outup" ]; then
+        rm $outup
+    fi
+
+    while IFS="" read -r lineRead || [ -n "$lineRead" ]; do
+
+        readarray -d'	' columns <<<"$lineRead"
+
+        if [[ "${columns[2]:0:2}" == '<#' ]]; then
+            hash_ID=${columns[2]}
+        else
+            if [[ "${columns[3]:0:2}" == '<#' ]]; then
+                hash_ID=${columns[3]}
+            fi
+        fi
+
+        if [[ $hash_ID == $previous_hash_id ]]; then
+            echo $lineRead >>$outup
+        else
+            echo " " >>$outup
+            echo $lineRead >>$outup
+        fi
+
+        previous_hash_id=$hash_ID
+    done <$input
+}
+
 # check/handle arguments
-if [[ "$1" = "-g" || "$1" = "--gui" || -z "$1" ]]; then
-    gui_interface=true
+if [[ "$1" = "-w" || "$1" = "-d" || -z "$1" ]]; then
+    check_available_tui "$1"
 elif [[ "$1" = "-t" || "$1" = "--terminal" ]]; then
-    gui_interface=false
+    use_tui_interface=false
 elif [[ "$1" = "-v" || "$1" = "--version" ]]; then
     echo -e $script_info
     exit 0
@@ -152,9 +231,9 @@ if [ $(
     echo $?
 ) != 0 ]; then
     error_message='Pkm85 deve ser invocado em um repositório git!'
-    if [ "$gui_interface" = true ]; then
+    if [ "$use_tui_interface" = true ]; then
         echo $error_message
-        whiptail_error "$error_message"
+        tui_error "$error_message"
     else
         echo -e 'Erro: '$error_message
     fi
@@ -176,8 +255,8 @@ fautor=$1
 finicio=$2
 ffim=$3
 
-if [ "$gui_interface" = true ]; then
-    whiptail_interface
+if [ "$use_tui_interface" = true ]; then
+    tui_interface_pages
 else
     echo -e '\nDISCLAIMER: '$disclaimer
     terminal_interface
@@ -185,8 +264,8 @@ fi
 
 if [[ "$inicio" > "$fim" ]]; then
     error_message="Data inicial ($inicio) maior que data final ($fim)"
-    if [ "$gui_interface" = true ]; then
-        whiptail_error "$error_message"
+    if [ "$use_tui_interface" = true ]; then
+        tui_error "$error_message"
     else
         echo -e '\nErro: '$error_message
     fi
@@ -203,20 +282,26 @@ mkdir -p $outPutDirectory
 # Geração dos arquivos de output
 timestamp=$(date +"%Y%m%d-%H%M%S")
 
-gitLogOutPutFile=$outPutDirectory/$timestamp'a-all.txt'
-nodupsfile=$outPutDirectory/$timestamp'b-no-dups.txt'
-dupsFile=$outPutDirectory/$timestamp'c-dups.txt'
+gitLogOutPutFile=$outPutDirectory/$timestamp'a-gitLogOutput.txt'
+reportFile=$outPutDirectory/$timestamp'b-relatorio.txt'
+dupsFile=$outPutDirectory/$timestamp'c-duplicados.txt'
+tempFile1=$outPutDirectory/$timestamp'-temp1.txt'
+tempFile2=$outPutDirectory/$timestamp'-temp2.txt'
+tempFile3=$outPutDirectory/$timestamp'-temp3.txt'
+tempFile4=$outPutDirectory/$timestamp'-temp4.txt'
+tempAddedFile=$outPutDirectory/$timestamp'-tempAddedFile.txt'
 
 # executa git log
-git log --author="$autor" --since="$inicio - 1 day" --until=$fim --no-merges --name-status --pretty="format:%h %ad %s" --date=format:"%F %H:%M" >$gitLogOutPutFile
+# git log --author="$autor" --since="$inicio - 1 day" --until=$fim --no-merges --name-status --pretty="format:>%h %ad %s" --date=format:"%F_%H:%M:%S" --abbrev=10 >$gitLogOutPutFile
+git log --author="$autor" --since=$inicio"T00:00:00-03:00" --until=$fim"T23:59:59-03:00" --no-merges --name-status --pretty="format:>%h %ad %s" --date=format:"%F_%H:%M:%S" --abbrev=10 >$gitLogOutPutFile
 
 #Verifica se o arquivo não está vazio
 qtLinhas=$(awk 'END { print NR }' $gitLogOutPutFile)
 
 if [ $qtLinhas = 0 ]; then
     no_result='Não encontrado commits de '$autor' no período de '$inicio' à '$fim' nesta branch.\n\nVerifique se nome e datas informados estão corretos.'
-    if [ "$gui_interface" = true ]; then
-        whiptail --ok-button "Encerrar" --backtitle "$script_info" --title "Sem resultado :(" --msgbox "$no_result" 10 60
+    if [ "$use_tui_interface" = true ]; then
+        $tui_interface --ok-button "Encerrar" --backtitle "$script_info" --title "Sem resultado :(" --msgbox "$no_result" 10 50
     else
         echo -e "Sem resultado :(\n"
         echo -e $no_result
@@ -225,17 +310,187 @@ if [ $qtLinhas = 0 ]; then
     exit 1
 fi
 
-# Retira linhas duplicadas
-awk '!a[$0]++' $gitLogOutPutFile >$nodupsfile
+#concatenate commitId to each line
+while IFS="" read -r lineRead || [ -n "$lineRead" ]; do
 
-# Grava as linhas duplicadas
-sort $gitLogOutPutFile | uniq -d >$dupsFile
+    firstCharacter="${lineRead:0:1}"
 
-sucess_info='Resultado salvo em:\n'$gitLogOutPutFile'     (Modificados no período)\n'$nodupsfile' (Exclui duplicados)\n'$dupsFile'    (lista duplicados)'
-warning1='\n\nATENÇÃO: Pkm85 não considera como duplicidade criação e alteração do mesmo arquivo no período informado. Confira e trate adequadamente as ocorrências do tipo.'
+    lineLength=$((${#lineRead} - 1))
 
-if [ "$gui_interface" = true ]; then
-    whiptail --ok-button "Encerrar" --backtitle $script_info --title "Sucesso \o/" --msgbox "$sucess_info$warning1" 14 80
+    if [[ $firstCharacter == '>' ]]; then
+        echo "" >>$tempFile1
+        echo ${lineRead:1:$lineLength} >>$tempFile1
+        commitID="${lineRead:1:10}"
+    else
+        if [ $lineLength -gt 1 ]; then
+            printf '%s\n' "$lineRead	<#$commitID	" >>$tempFile1
+        fi
+    fi
+
+done <$gitLogOutPutFile
+
+# Grava relatorio retirando linhas duplicadas (mantém apenas a linha com o commit id mais recente de cada arquivo)
+awk '!a[$2]++' $tempFile1 >$reportFile
+
+# Grava as linhas duplicadas (versões/commits anteriores à versão incluída no relatório  )
+awk 'FNR == NR { seen[$2]++; next } seen[$2] > 1' $tempFile1 $tempFile1 >$tempFile2
+
+qtLinhas=$(awk 'END { print NR }' $tempFile2)
+
+if [ $qtLinhas -gt 0 ]; then
+
+    grep -Fxvf $reportFile $tempFile2 >$tempFile3
+
+    insert_blank_line_between_hash $tempFile3 $tempFile4
+
+    cp $tempFile4 $dupsFile
+    rm $tempFile3 $tempFile4
+fi
+
+#remove temp files
+rm $tempFile1 $tempFile2
+
+# Look for rename/move
+remove_duplicate_again=false
+found_file_renamed_or_moved=false
+
+while IFS="" read -r lineRead || [ -n "$lineRead" ]; do
+
+    firstColumn="${lineRead:0:4}"
+
+    lineLength=$((${#lineRead} - 1))
+
+    if [[ $firstColumn =~ ^[R]{1}[0-9]{3}$ ]]; then
+        remove_duplicate_again=true
+        found_file_renamed_or_moved=true
+        readarray -d'	' columns <<<"$lineRead"
+        echo "${columns[0]}${columns[2]}${columns[3]}" >>$tempFile1
+    else
+        echo $lineRead >>$tempFile1
+    fi
+
+done <$reportFile
+
+if [ "$remove_duplicate_again" = true ]; then
+    # Retira linhas duplicadas
+    awk '!a[$2]++' $tempFile1 >$reportFile
+
+    # Grava as linhas duplicadas
+    echo -e '\n-------------------------------------------------------------------------------' >>$dupsFile
+    echo -e 'Duplicados removidos após tratamento de rename/movimentação' >>$dupsFile
+
+    awk 'FNR == NR { seen[$2]++; next } seen[$2] > 1' $tempFile1 $tempFile1 >$tempFile2
+    grep -Fxvf $reportFile $tempFile2 >$tempFile3
+
+    insert_blank_line_between_hash $tempFile3 $tempFile4
+
+    cat $dupsFile $tempFile4 >$tempFile1
+    cp $tempFile1 $dupsFile
+    rm $tempFile1 $tempFile2 $tempFile3 $tempFile4
+fi
+
+#tidy files
+awk '{sub(/	<#/,"#");print }' $reportFile >$tempFile1 && mv $tempFile1 $reportFile
+
+qtCriadosEAlterados=0
+
+if [ -f "$dupsFile" ]; then
+    #check for file created and modified
+    awk '/A	/ { print "	"$2 }' $dupsFile >$tempAddedFile
+
+    qtCriadosEAlterados=$(awk 'END { print NR }' $tempAddedFile)
+
+    awk '{sub(/	<#/,"#");print }' $dupsFile >$tempFile1 && mv $tempFile1 $dupsFile
+else
+    echo "Não encontrado nenhum arquivo com mais de 1 commit pelo dev no período" >$dupsFile
+fi
+
+# insert an empty line before each commit (report file)
+while IFS="" read -r lineRead || [ -n "$lineRead" ]; do
+
+    str="${lineRead:10:3}"
+
+    if [[ $str == ' 20' ]]; then
+        echo "" >>$tempFile1
+    fi
+
+    echo $lineRead >>$tempFile1
+
+done <$reportFile
+
+mv $tempFile1 $reportFile
+
+## Check if there will be alerts
+
+#check for deleted file
+awk '/D	/' $reportFile >$tempFile2
+
+qtDeletedFiles=$(awk 'END { print NR }' $tempFile2)
+
+if [[ $qtCriadosEAlterados -gt 0 || $qtDeletedFiles -gt 0 ]]; then
+    echo -e "                            A  L  E  R  T  A  S" >$tempFile3
+fi
+
+qtWarning=1
+
+if [ $qtCriadosEAlterados -ge 1 ]; then
+    if [ $qtCriadosEAlterados -gt 1 ]; then
+        pluralOuSingular="Os arquivos abaixo foram criados e modificados"
+    else
+        pluralOuSingular="O arquivo abaixo foi criado e modificado"
+    fi
+    echo -e "\n $qtWarning) $pluralOuSingular no período. Efetue a entrega\nindicando que é criação. O hash ID consta na seção RELATÓRIO mais abaixo.\n" >>$tempFile3
+    cat $tempFile3 $tempAddedFile >$tempFile4 && mv $tempFile4 $tempFile3
+    let qtWarning+=1
+fi
+
+if [ $qtDeletedFiles -ge 1 ]; then
+    if [ $qtDeletedFiles -gt 1 ]; then
+        pluralOuSingular="dos arquivos abaixo (também incluídos na seção RELATÓRIO)"
+    else
+        pluralOuSingular="do arquivo abaixo (também incluído na seção RELATÓRIO)"
+    fi
+    echo -e "\n $qtWarning) O commit mais recente $pluralOuSingular foi de deleção. Analise a pertinência da entrega.\n" >>$tempFile3
+
+    cat $tempFile3 $tempFile2 >$tempFile4 && mv $tempFile4 $tempFile3
+    let qtWarning+=1
+fi
+
+#check for renamed files
+if [ "$found_file_renamed_or_moved" = true ]; then
+    awk '/^R[0-9]/' $gitLogOutPutFile >$tempFile2
+
+    qtRenamedFiles=$(awk 'END { print NR }' $tempFile2)
+
+    if [ $qtRenamedFiles -gt 1 ]; then
+        pluralOuSingular="Os arquivos abaixo foram renomeados ou movidos"
+    else
+        pluralOuSingular="O arquivo abaixo foi renomeado e movido"
+    fi
+
+    echo -e "\n $qtWarning) $pluralOuSingular para outra pasta. Atente para não entregar em duplicidade.\n" >>$tempFile3
+    cat $tempFile3 $tempFile2 >$tempFile4 && mv $tempFile4 $tempFile3
+fi
+
+if [[ $qtCriadosEAlterados -gt 0 || $qtDeletedFiles -gt 0 || "$found_file_renamed_or_moved" = true ]]; then
+    echo -e '\n-------------------------------------------------------------------------------\n' >>$tempFile3
+fi
+echo -e '                        R  E  L  A  T  Ó  R  I  O\n' >>$tempFile3
+echo -e 'Obs.: Contem apenas o commit mais recente dos arquivos criados e alterados pelo dev/período informado.' >>$tempFile3
+cat $tempFile3 $reportFile >$tempFile4 && mv $tempFile4 $reportFile
+
+#delete temp files
+rm $tempAddedFile $tempFile2 $tempFile3
+
+#show results
+sucess_info='Resultado salvo em:\n'$gitLogOutPutFile'  \n'$reportFile'\n'$dupsFile
+
+if [[ $qtCriadosEAlterados -gt 0 || $qtDeletedFiles -gt 0 || "$found_file_renamed_or_moved" = true ]]; then
+    warning1='\n\nATENÇÃO: Relatório gerado com alerta(s). Leia atentamente o(s) alerta(s) e trate adequadamente.'
+fi
+
+if [ "$use_tui_interface" = true ]; then
+    $tui_interface --ok-button "Encerrar" --backtitle $script_info --title "Sucesso \o/" --msgbox "$sucess_info$warning1" 14 70
 fi
 
 echo ' '
