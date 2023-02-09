@@ -347,8 +347,6 @@ tempFile2=$outPutDirectory/$timestamp'-temp2.txt'
 tempFile3=$outPutDirectory/$timestamp'-temp3.txt'
 tempFile4=$outPutDirectory/$timestamp'-temp4.txt'
 tempFile5=$outPutDirectory/$timestamp'-temp5.txt'
-tempFile6=$outPutDirectory/$timestamp'-temp6.txt'
-tempFile7=$outPutDirectory/$timestamp'-temp7.txt'
 tempAddedFile=$outPutDirectory/$timestamp'-tempAddedFile.txt'
 
 # executa git log
