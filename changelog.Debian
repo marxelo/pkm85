@@ -1,3 +1,13 @@
+pkm85 (0.85-5) stable; urgency=low
+
+  [ Marselo ] 
+  * Enrich report
+  - prefix directory name to file name
+  - mark file added and the modified with 'A*'
+
+ 
+ -- Marselo <falso.endereco@gmail.com>  Thu,  09 Fev 2023 20:14:00 +0300 
+
 pkm85 (0.85-4) stable; urgency=low
 
   [ Marselo ] 
