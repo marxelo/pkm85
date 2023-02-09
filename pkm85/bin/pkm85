@@ -1,6 +1,6 @@
 #!/bin/bash
 # Pkm85.sh
-# Version: 0.85.4
+# Version: 0.85.5
 # author: Marselo Maciel
 # e-mail: falso.endereco@gmail.com
 # date: dez/2022
@@ -201,6 +201,63 @@ insert_blank_line_between_hash() {
     done <$input
 }
 
+push_tempAddedFile_to_array() {
+    previous_hash_id=""
+    input=$1
+
+    addedFileArray=()
+
+    while IFS="" read -r lineRead || [ -n "$lineRead" ]; do
+
+        readarray -d'	' columns <<<"$lineRead"
+
+        addedFileArray+=${columns[1]}
+
+    done <$input
+}
+
+enrich_report() {
+    # prefix folder name to file names
+    # mark file added and the modified with 'A*'
+
+    push_tempAddedFile_to_array $1
+
+    input=$2
+    outup=$3
+
+    if [ -f "$outup" ]; then
+        rm $outup
+    fi
+
+    while IFS="" read -r lineRead || [ -n "$lineRead" ]; do
+
+        readarray -d'	' columns <<<"$lineRead"
+
+        # não é linha vazia nem com a mensagem de commit
+        if [[ ! -z "${columns[1]}" && "${lineRead:10:3}" != ' 20' ]]; then
+
+            if [[ "${columns[0]:0:1}" == 'D' ]]; then
+                echo "${columns[0]}$cur_dir${columns[1]}${columns[2]}" >>$outup
+            else
+                fileName=${columns[1]::-1}
+
+                if [[ ${addedFileArray[*]} =~ $fileName ]]; then
+
+                    columns[0]="A*"
+
+                    echo "${columns[0]}	$cur_dir${columns[1]}${columns[2]}" >>$outup
+                else
+                    echo "${columns[0]}$cur_dir${columns[1]}${columns[2]}" >>$outup
+                fi
+            fi
+        fi
+
+
+    done <$input
+
+}
+
+
 # check/handle arguments
 if [[ "$1" = "-w" || "$1" = "-d" || -z "$1" ]]; then
     check_available_tui "$1"
@@ -289,6 +346,9 @@ tempFile1=$outPutDirectory/$timestamp'-temp1.txt'
 tempFile2=$outPutDirectory/$timestamp'-temp2.txt'
 tempFile3=$outPutDirectory/$timestamp'-temp3.txt'
 tempFile4=$outPutDirectory/$timestamp'-temp4.txt'
+tempFile5=$outPutDirectory/$timestamp'-temp5.txt'
+tempFile6=$outPutDirectory/$timestamp'-temp6.txt'
+tempFile7=$outPutDirectory/$timestamp'-temp7.txt'
 tempAddedFile=$outPutDirectory/$timestamp'-tempAddedFile.txt'
 
 # executa git log
@@ -310,7 +370,10 @@ if [ $qtLinhas = 0 ]; then
     exit 1
 fi
 
-#concatenate commitId to each line
+#concatenate commitId and current directorry to each line
+# get current directory 
+cur_dir=${PWD##*/}'/'
+
 while IFS="" read -r lineRead || [ -n "$lineRead" ]; do
 
     firstCharacter="${lineRead:0:1}"
@@ -390,7 +453,7 @@ if [ "$remove_duplicate_again" = true ]; then
 fi
 
 #tidy files
-awk '{sub(/	<#/,"#");print }' $reportFile >$tempFile1 && mv $tempFile1 $reportFile
+# awk '{sub(/	<#/,"#");print }' $reportFile >$tempFile1 && mv $tempFile1 $reportFile
 
 qtCriadosEAlterados=0
 
@@ -439,8 +502,15 @@ if [ $qtCriadosEAlterados -ge 1 ]; then
     else
         pluralOuSingular="O arquivo abaixo foi criado e modificado"
     fi
-    echo -e "\n $qtWarning) $pluralOuSingular no período. Efetue a entrega\nindicando que é criação. O hash ID consta na seção RELATÓRIO mais abaixo.\n" >>$tempFile3
+
+    enrich_report $tempAddedFile $reportFile $tempFile5
+
+    mv $tempFile5 $reportFile
+
+    echo -e "\n $qtWarning) $pluralOuSingular no período. Os arquivos\nnessa situação e que não foram renomeados/movidos estão marcados com 'A*'\nno RELATÓRIO mais abaixo. Os movidos/renomeados estão com a marcação emitida\npelo git log (M, R..., D). Efetue a entrega indicando que é criação.\nO hash ID consta na seção RELATÓRIO mais abaixo.\n" >>$tempFile3
+
     cat $tempFile3 $tempAddedFile >$tempFile4 && mv $tempFile4 $tempFile3
+
     let qtWarning+=1
 fi
 
@@ -478,6 +548,8 @@ fi
 echo -e '                        R  E  L  A  T  Ó  R  I  O\n' >>$tempFile3
 echo -e 'Obs.: Contem apenas o commit mais recente dos arquivos criados e alterados pelo dev/período informado.' >>$tempFile3
 cat $tempFile3 $reportFile >$tempFile4 && mv $tempFile4 $reportFile
+
+awk '{sub(/	<#/,"#");print }' $reportFile >$tempFile1 && mv $tempFile1 $reportFile
 
 #delete temp files
 rm $tempAddedFile $tempFile2 $tempFile3
