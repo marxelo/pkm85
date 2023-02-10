@@ -1,6 +1,6 @@
 #!/bin/bash
 # Pkm85.sh
-# Version: 0.85.5
+# Version: 0.85.6
 # author: Marselo Maciel
 # e-mail: falso.endereco@gmail.com
 # date: dez/2022
@@ -15,7 +15,7 @@
 ##############################################################################
 #
 # check if current directory is a git repository
-script_info="Pkm85 - Version 0.85.4 - What is Pkm 85?"
+script_info="Pkm85 - Version 0.85.6 - What is Pkm 85?"
 disclaimer='Pkm85 é apenas um facilitador. Você é o único responsável por utilizar as informações fornecidas.'
 
 short_help() {
@@ -252,11 +252,10 @@ enrich_report() {
             fi
         fi
 
-
-    done <$input
+    done \
+        <$input
 
 }
-
 
 # check/handle arguments
 if [[ "$1" = "-w" || "$1" = "-d" || -z "$1" ]]; then
@@ -368,9 +367,7 @@ if [ $qtLinhas = 0 ]; then
     exit 1
 fi
 
-#concatenate commitId and current directorry to each line
-# get current directory 
-cur_dir=${PWD##*/}'/'
+#concatenate commitId to each line
 
 while IFS="" read -r lineRead || [ -n "$lineRead" ]; do
 
@@ -463,26 +460,18 @@ if [ -f "$dupsFile" ]; then
 
     awk '{sub(/	<#/,"#");print }' $dupsFile >$tempFile1 && mv $tempFile1 $dupsFile
 else
+    echo '' > $tempAddedFile
     echo "Não encontrado nenhum arquivo com mais de 1 commit pelo dev no período" >$dupsFile
 fi
 
-# insert an empty line before each commit (report file)
-while IFS="" read -r lineRead || [ -n "$lineRead" ]; do
+# get current directory
+cur_dir=${PWD##*/}'/'
 
-    str="${lineRead:10:3}"
+enrich_report $tempAddedFile $reportFile $tempFile5
 
-    if [[ $str == ' 20' ]]; then
-        echo "" >>$tempFile1
-    fi
-
-    echo $lineRead >>$tempFile1
-
-done <$reportFile
-
-mv $tempFile1 $reportFile
+mv $tempFile5 $reportFile
 
 ## Check if there will be alerts
-
 #check for deleted file
 awk '/D	/' $reportFile >$tempFile2
 
@@ -500,10 +489,6 @@ if [ $qtCriadosEAlterados -ge 1 ]; then
     else
         pluralOuSingular="O arquivo abaixo foi criado e modificado"
     fi
-
-    enrich_report $tempAddedFile $reportFile $tempFile5
-
-    mv $tempFile5 $reportFile
 
     echo -e "\n $qtWarning) $pluralOuSingular no período. Os arquivos\nnessa situação e que não foram renomeados/movidos estão marcados com 'A*'\nno RELATÓRIO mais abaixo. Os movidos/renomeados estão com a marcação emitida\npelo git log (M, R..., D). Efetue a entrega indicando que é criação.\nO hash ID consta na seção RELATÓRIO mais abaixo.\n" >>$tempFile3
 

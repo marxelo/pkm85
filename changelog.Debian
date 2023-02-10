@@ -1,3 +1,10 @@
+pkm85 (0.85-6) stable; urgency=low
+
+  [ Marselo ]
+  * fix bug when there is only 1 commit 
+ 
+ -- Marselo <falso.endereco@gmail.com>  Thu,  9 Feb 2023 22:35:00 +0300 
+
 pkm85 (0.85-5) stable; urgency=low
 
   [ Marselo ]
